@@ -25,6 +25,16 @@ describe('verifyCompletion', () => {
     expect(result).toEqual({ passed: true, missing: [], failures: [], blockers: [] })
   })
 
+  it('uses the latest evidence after a failed check is repaired', () => {
+    const contract = compileCommand('Fix it and run tests.')
+    const result = verifyCompletion(contract, [
+      { kind: 'test', name: 'tests', status: 'failed', detail: '1 failed' },
+      { kind: 'test', name: 'tests', status: 'passed' },
+    ])
+
+    expect(result).toEqual({ passed: true, missing: [], failures: [], blockers: [] })
+  })
+
   it('reports forbidden actions observed during execution', () => {
     const contract = compileCommand('Fix it. Do not push or deploy and do not checkout main.')
     const violations = findConstraintViolations(contract, [
