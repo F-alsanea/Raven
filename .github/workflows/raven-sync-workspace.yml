@@ -34,31 +34,44 @@ jobs:
       - name: Install workspace
         run: pnpm install --no-frozen-lockfile
 
-      - name: Generate package aliases
-        run: pnpm run gen-tsconfig-paths
-
-      - name: Register Raven host projects
+      - name: Register Raven source aliases and host projects
         shell: python
         run: |
           from pathlib import Path
 
-          path = Path('tsconfig.host.json')
-          text = path.read_text()
-          anchor = '    { "path": "./apps/cli" },'
+          base = Path('tsconfig.base.json')
+          text = base.read_text()
+          alias_anchor = '      // BEGIN generated package aliases — pnpm run gen-tsconfig-paths'
+          aliases = (
+              '      "@deepseek-ai/dsh-raven-control-plane": ["./packages/raven/control-plane/src"],\n'
+              '      "@deepseek-ai/dsh-raven-control-plane-runtime": ["./packages/raven/control-plane-runtime/src"],\n'
+          )
+          if '"@deepseek-ai/dsh-raven-control-plane"' not in text:
+              if alias_anchor not in text:
+                  raise SystemExit('tsconfig.base.json generated-alias anchor not found')
+              text = text.replace(alias_anchor, aliases + alias_anchor, 1)
+              base.write_text(text)
+
+          host = Path('tsconfig.host.json')
+          text = host.read_text()
+          host_anchor = '    { "path": "./apps/cli" },'
           refs = (
               '    { "path": "./packages/raven/control-plane" },\n'
               '    { "path": "./packages/raven/control-plane-runtime" },\n'
           )
-          if './packages/raven/control-plane' not in text:
-              if anchor not in text:
+          if '"./packages/raven/control-plane"' not in text:
+              if host_anchor not in text:
                   raise SystemExit('tsconfig.host.json insertion anchor not found')
-              text = text.replace(anchor, refs + anchor, 1)
-              path.write_text(text)
+              text = text.replace(host_anchor, refs + host_anchor, 1)
+              host.write_text(text)
+
+      - name: Verify generated package aliases
+        run: pnpm run gen-tsconfig-paths
 
       - name: Refresh lockfile
         run: pnpm install --lockfile-only --no-frozen-lockfile
 
-      - name: Verify generated aliases
+      - name: Verify source resolution
         run: pnpm run verify-tsconfig-paths
 
       - name: Commit workspace metadata
