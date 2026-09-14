@@ -64,12 +64,18 @@ function defaultPermissions(): RavenPermissions {
 }
 
 function inferGoal(parts: string[]): string {
-  const directivePattern = /(?:do\s+not|don['’]?t|never|لا|ممنوع|بدون|read\b|اقر[اأ]|اختبر|test\b|commit\b|push\b|deploy\b|migrat)/i
+  const directivePattern = /(?:do\s+not|don['’]?t|never|لا|ممنوع|بدون|read\b|اقر|راجع|اختبر|test\b|commit\b|push\b|deploy\b|migrat)/i
   return parts.find(part => !directivePattern.test(part)) ?? parts[0] ?? ''
 }
 
 function unique(values: string[]): string[] {
   return [...new Set(values.map(value => value.trim()).filter(Boolean))]
+}
+
+function asksToReadProjectInstructions(part: string): boolean {
+  const namesProjectInstructions = /(?:AGENTS\.md|CLAUDE\.md|HANDOFF\.md|instructions?|تعليمات)/i.test(part)
+  const containsReadVerb = /(?:\bread\b|اقر|راجع|افتح)/i.test(part)
+  return namesProjectInstructions && containsReadVerb
 }
 
 /**
@@ -99,7 +105,7 @@ export function compileCommand(sourceText: string): RavenTaskContract {
       }
     }
 
-    if (/(?:read|اقر[اأ]|راجع)\s+.*(?:AGENTS\.md|instructions?|تعليمات)/i.test(part)) {
+    if (asksToReadProjectInstructions(part)) {
       requirements.push('read project instructions')
     }
     if (/(?:verify|check|تأكد|تاكد|تحقق).*(?:branch|فرع)/i.test(part)) {
