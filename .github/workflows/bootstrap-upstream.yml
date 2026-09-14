@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Import DeepSeek Harness history
+      - name: Import DeepSeek Harness snapshot
         shell: bash
         run: |
           set -euo pipefail
@@ -27,7 +27,16 @@ jobs:
           git config user.email "raven-bootstrap[bot]@users.noreply.github.com"
           git remote add deepseek https://github.com/deepseek-ai/deepseek-harness.git || true
           git fetch deepseek master --tags
-          git branch -f upstream/deepseek-harness FETCH_HEAD
+          UPSTREAM_SHA="$(git rev-parse FETCH_HEAD)"
+
+          git checkout --orphan upstream-snapshot
+          git rm -rf . >/dev/null 2>&1 || true
+          git checkout "$UPSTREAM_SHA" -- .
+          rm -rf .github/workflows
+          printf '%s\n' "$UPSTREAM_SHA" > .raven-upstream-sha
+          git add -A
+          git commit -m "chore: import DeepSeek Harness upstream snapshot $UPSTREAM_SHA"
+          git branch -M upstream/deepseek-harness
           git push origin upstream/deepseek-harness --force
 
       - name: Create Raven integration branch
@@ -47,14 +56,17 @@ jobs:
 
           Raven is based on DeepSeek Harness.
 
-          - Upstream remote: `https://github.com/deepseek-ai/deepseek-harness.git`
+          - Upstream repository: `https://github.com/deepseek-ai/deepseek-harness.git`
           - Upstream branch: `master`
-          - Mirrored branch in this repository: `upstream/deepseek-harness`
-          - Raven development integration branch: `raven/integration`
+          - Mirrored snapshot branch: `upstream/deepseek-harness`
+          - Raven development branch: `raven/integration`
+          - Exact imported upstream commit: see `.raven-upstream-sha`
+
+          Upstream GitHub workflow files are intentionally excluded from the mirrored snapshot because the repository automation token cannot publish third-party workflow files. Raven owns its own CI workflows.
 
           The original DeepSeek Harness license is preserved as `LICENSE.deepseek-harness`.
           Raven-specific code is covered by the repository `LICENSE`, unless otherwise noted.
           EOF
-          git add README.md NOTICE.md LICENSE LICENSE.deepseek-harness RAVEN_UPSTREAM.md
-          git commit -m "chore: establish Raven on DeepSeek Harness upstream"
+          git add README.md NOTICE.md LICENSE LICENSE.deepseek-harness RAVEN_UPSTREAM.md .raven-upstream-sha
+          git commit -m "chore: establish Raven integration branch"
           git push origin raven/integration --force
