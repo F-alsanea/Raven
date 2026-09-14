@@ -1,0 +1,60 @@
+name: Bootstrap DeepSeek Harness upstream
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bootstrap-upstream.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Raven
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Import DeepSeek Harness history
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "raven-bootstrap[bot]"
+          git config user.email "raven-bootstrap[bot]@users.noreply.github.com"
+          git remote add deepseek https://github.com/deepseek-ai/deepseek-harness.git || true
+          git fetch deepseek master --tags
+          git branch -f upstream/deepseek-harness FETCH_HEAD
+          git push origin upstream/deepseek-harness --force
+
+      - name: Create Raven integration branch
+        shell: bash
+        env:
+          RAVEN_MAIN: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git checkout -B raven/integration upstream/deepseek-harness
+          git checkout "$RAVEN_MAIN" -- README.md NOTICE.md
+          if [ -f LICENSE ]; then
+            mv LICENSE LICENSE.deepseek-harness
+          fi
+          git checkout "$RAVEN_MAIN" -- LICENSE
+          cat > RAVEN_UPSTREAM.md <<'EOF'
+          # Raven upstream tracking
+
+          Raven is based on DeepSeek Harness.
+
+          - Upstream remote: `https://github.com/deepseek-ai/deepseek-harness.git`
+          - Upstream branch: `master`
+          - Mirrored branch in this repository: `upstream/deepseek-harness`
+          - Raven development integration branch: `raven/integration`
+
+          The original DeepSeek Harness license is preserved as `LICENSE.deepseek-harness`.
+          Raven-specific code is covered by the repository `LICENSE`, unless otherwise noted.
+          EOF
+          git add README.md NOTICE.md LICENSE LICENSE.deepseek-harness RAVEN_UPSTREAM.md
+          git commit -m "chore: establish Raven on DeepSeek Harness upstream"
+          git push origin raven/integration --force
