@@ -1,28 +1,40 @@
 import type { RavenEvidence, RavenTaskContract, RavenVerificationResult } from './types.ts'
 
+function latestEvidence(evidence: RavenEvidence[]): RavenEvidence[] {
+  const latest = new Map<string, RavenEvidence>()
+  for (const item of evidence) {
+    const key = `${item.kind}:${item.name.toLowerCase()}`
+    latest.set(key, item)
+  }
+  return [...latest.values()]
+}
+
 function evidencePassed(evidence: RavenEvidence[], name: string): boolean {
-  const normalized = name.toLowerCase()
-  return evidence.some(item => item.status === 'passed' && item.name.toLowerCase().includes(normalized.replace(' passed', '')))
+  const normalized = name.toLowerCase().replace(' passed', '')
+  return latestEvidence(evidence).some(item => (
+    item.status === 'passed' && item.name.toLowerCase().includes(normalized)
+  ))
 }
 
 /** Verify that Raven has observable evidence before declaring a task complete. */
 export function verifyCompletion(contract: RavenTaskContract, evidence: RavenEvidence[]): RavenVerificationResult {
-  const failures = evidence
+  const current = latestEvidence(evidence)
+  const failures = current
     .filter(item => item.status === 'failed')
     .map(item => `${item.name}${item.detail ? `: ${item.detail}` : ''}`)
 
-  const blockers = evidence
+  const blockers = current
     .filter(item => item.kind === 'blocker')
     .map(item => `${item.name}${item.detail ? `: ${item.detail}` : ''}`)
 
   const missing = contract.completion.filter(requirement => {
-    if (requirement === 'tests passed') return !evidencePassed(evidence, 'test')
-    if (requirement === 'typecheck passed') return !evidencePassed(evidence, 'typecheck')
-    if (requirement === 'build passed') return !evidencePassed(evidence, 'build')
+    if (requirement === 'tests passed') return !evidencePassed(current, 'tests')
+    if (requirement === 'typecheck passed') return !evidencePassed(current, 'typecheck')
+    if (requirement === 'build passed') return !evidencePassed(current, 'build')
     if (requirement === 'requested commit created') {
-      return !evidence.some(item => item.kind === 'action' && item.status === 'passed' && /commit/i.test(item.name))
+      return !current.some(item => item.kind === 'action' && item.status === 'passed' && /commit/i.test(item.name))
     }
-    return !evidencePassed(evidence, requirement)
+    return !evidencePassed(current, requirement)
   })
 
   return {
