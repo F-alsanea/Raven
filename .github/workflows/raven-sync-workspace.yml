@@ -1,0 +1,76 @@
+name: Raven Sync Workspace Metadata
+
+on:
+  push:
+    branches:
+      - raven/m1-control-plane
+    paths:
+      - '.github/workflows/raven-sync-workspace.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install workspace
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Generate package aliases
+        run: pnpm run gen-tsconfig-paths
+
+      - name: Register Raven host projects
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('tsconfig.host.json')
+          text = path.read_text()
+          anchor = '    { "path": "./apps/cli" },'
+          refs = (
+              '    { "path": "./packages/raven/control-plane" },\n'
+              '    { "path": "./packages/raven/control-plane-runtime" },\n'
+          )
+          if './packages/raven/control-plane' not in text:
+              if anchor not in text:
+                  raise SystemExit('tsconfig.host.json insertion anchor not found')
+              text = text.replace(anchor, refs + anchor, 1)
+              path.write_text(text)
+
+      - name: Refresh lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+
+      - name: Verify generated aliases
+        run: pnpm run verify-tsconfig-paths
+
+      - name: Commit workspace metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "raven-workspace[bot]"
+          git config user.email "raven-workspace[bot]@users.noreply.github.com"
+          git add tsconfig.base.json tsconfig.host.json pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "Workspace metadata already synchronized."
+            exit 0
+          fi
+          git commit -m "chore(raven): sync workspace metadata"
+          git push origin HEAD:raven/m1-control-plane
