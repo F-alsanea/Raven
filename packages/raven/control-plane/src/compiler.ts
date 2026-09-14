@@ -30,7 +30,7 @@ function normalize(text: string): string {
 
 function clauses(text: string): string[] {
   return normalize(text)
-    .split(/(?:\n+|[.;؛]|،|,(?=\s)|\bthen\b|\bbut\b|\bif\b|\bunless\b|\bبعدها\b|\bلكن\b|\bإذا\b|\bاذا\b)/i)
+    .split(/(?:\n+|[;؛]|،|,(?=\s)|\.(?=\s|$)|\bthen\b|\bbut\b|\bif\b|\bunless\b|\bبعدها\b|\bلكن\b|\bإذا\b|\bاذا\b)/i)
     .map(value => value.trim())
     .filter(Boolean)
 }
