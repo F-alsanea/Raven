@@ -3,7 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { type ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { apply } from '@deepseek-ai/dsh-tools/raven-fable-compat'
+import * as FableCompat from '@deepseek-ai/dsh-tools/raven-fable-compat'
 
 const signal = new AbortController().signal
 
@@ -24,17 +24,21 @@ function fixture(name: string, calls: Array<{ name: string; args: unknown }>): T
 }
 
 describe('Raven Fable tool compatibility', () => {
-  it('translates the Fable argument shapes into Raven tools', async () => {
+  it('tracks available targets, translates arguments, and unwinds aliases', async () => {
     const ctx = new Context()
     const calls: Array<{ name: string; args: unknown }> = []
     try {
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime, {})
-      ctx.tools.register(fixture('web_search', calls))
-      ctx.tools.register(fixture('present', calls))
-      ctx.tools.register(fixture('session_search', calls))
+      const fiber = await ctx.plugin(FableCompat)
 
-      apply(ctx)
+      expect(ctx.tools.get('web_search_fast')).toBeUndefined()
+      expect(ctx.tools.get('present_files')).toBeUndefined()
+      expect(ctx.tools.get('conversation_search')).toBeUndefined()
+
+      const disposeSearch = ctx.tools.register(fixture('web_search', calls))
+      const disposePresent = ctx.tools.register(fixture('present', calls))
+      const disposeSessionSearch = ctx.tools.register(fixture('session_search', calls))
 
       expect(ctx.tools.schemas().map(tool => tool.name)).toContain('web_search_fast')
       expect(ctx.tools.schemas().map(tool => tool.name)).toContain('present_files')
@@ -70,19 +74,19 @@ describe('Raven Fable tool compatibility', () => {
           args: { query: 'project', session_ids: ['session-1'] },
         },
       ])
-    } finally {
-      await ctx.fiber.dispose()
-    }
-  })
 
-  it('fails activation when a required Raven target is absent', async () => {
-    const ctx = new Context()
-    try {
-      await ctx.plugin(SystemPrompt)
-      await ctx.plugin(ToolRuntime, {})
-      expect(() => apply(ctx)).toThrow(
-        'Fable compatibility tool "web_search_fast" requires registered Raven tool "web_search"',
-      )
+      disposePresent()
+      expect(ctx.tools.get('present_files')).toBeUndefined()
+      expect(ctx.tools.get('web_search_fast')).toBeDefined()
+
+      await fiber.dispose()
+      expect(ctx.tools.get('web_search_fast')).toBeUndefined()
+      expect(ctx.tools.get('conversation_search')).toBeUndefined()
+      expect(ctx.tools.get('web_search')).toBeDefined()
+      expect(ctx.tools.get('session_search')).toBeDefined()
+
+      disposeSearch()
+      disposeSessionSearch()
     } finally {
       await ctx.fiber.dispose()
     }
