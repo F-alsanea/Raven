@@ -25,15 +25,15 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./raven-fable": {
-      "types": "./lib/types/raven-fable.d.ts",
-      "default": "./lib/raven-fable.js"
+      "types": "./lib/types/startup.d.ts",
+      "default": "./lib/startup.js"
     }
   },
   "files": [
     "lib/index.js",
     "lib/invariant.js",
     "lib/types/**/*.d.ts",
-    "lib/raven-fable.js",
+    "lib/startup.js",
     "prompts/claude-fable-5.1.md"
   ],
   "license": "MIT",
