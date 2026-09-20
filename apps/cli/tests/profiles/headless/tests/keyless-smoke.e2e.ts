@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { runLoaderSmoke } from '@deepseek-ai/dsh-loader-smoke'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { RAVEN_FABLE_PROMPT } from '@deepseek-ai/dsh-system-prompt/raven-fable'
 import { scanZstdFrames } from '@deepseek-ai/dsh-session-persistence-jsonl/src/zstd.js'
 
 const PRODUCTION_PROFILE_PROCESS_TIMEOUT_MS = 60_000
@@ -16,6 +17,7 @@ const tsconfigPath = fileURLToPath(new URL('../../../../../../tsconfig.json', im
 describe('headless-agent keyless smoke', () => {
   it('boots the real Loader tree, runs the production shell tool, and persists the turn', async () => {
     let persistedHeader: Record<string, unknown> | undefined
+    let persistedSystemText: string | undefined
     let persistedToolNames: string[] = []
     const { stdout, stderr } = await runLoaderSmoke({
       label: 'headless-agent',
@@ -39,6 +41,14 @@ describe('headless-agent keyless smoke', () => {
           zstdDecompressSync(compressed.subarray(start, end)).toString().trim().split('\n'))
           .map(line => JSON.parse(line) as Record<string, unknown>)
         persistedHeader = records[0]
+        const systemRecord = records.find(record => record.type === 'system/message')
+        const systemData = systemRecord?.data as Record<string, unknown> | undefined
+        const systemMessage = systemData?.message as Record<string, unknown> | undefined
+        const systemContent = systemMessage?.content as Array<{ type?: string; text?: string }> | undefined
+        persistedSystemText = systemContent
+          ?.filter(block => block.type === 'text')
+          .map(block => block.text ?? '')
+          .join('')
         const requestHeader = records.find(record => record.type === 'request/header')
         const data = requestHeader?.data as Record<string, unknown> | undefined
         const header = data?.header as Record<string, unknown> | undefined
@@ -60,6 +70,7 @@ describe('headless-agent keyless smoke', () => {
     })
     expect(String(result?.['output'])).toContain('CLI_TOOL_ROUND_TRIP')
     expect(persistedHeader).toMatchObject({ type: 'session' })
+    expect(persistedSystemText).toBe(RAVEN_FABLE_PROMPT)
     expect(persistedToolNames).toEqual(expect.arrayContaining(['read', 'write', 'edit', 'web_fetch', 'web_search']))
     expect(persistedToolNames).not.toContain('str_replace_editor')
   }, PRODUCTION_PROFILE_TEST_TIMEOUT_MS)
