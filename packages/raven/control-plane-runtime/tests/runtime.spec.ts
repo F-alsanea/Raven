@@ -97,6 +97,34 @@ describe('Raven control-plane runtime', () => {
     expect(messages.filter(text => text.includes('Raven verification gate:'))).toHaveLength(0)
   })
 
+  it('records failed verification evidence with its error detail', async () => {
+    const ctx = await harness()
+    ctx.tools.register(defineContentToolFixture({
+      name: 'test',
+      description: 'run tests',
+      parameters: {},
+      async execute() {
+        throw new Error('tests exploded')
+      },
+    }))
+    ctx.llm.registerAdapter(['mock'], new MockAdapter([
+      toolCallResponse('c1', 'test', {}),
+      textResponse('cannot complete'),
+      textResponse('reporting blocker'),
+    ]))
+
+    const agent = await ctx.agentLoop.create(SessionId('failed-test-evidence'), { provider: 'mock', model: 'mock' })
+    agent.followup(createUserMessage({
+      content: [{ type: 'text', text: 'Fix it and run tests.' }],
+      source: { kind: 'user' },
+    }))
+    await waitForIdle(ctx, agent)
+
+    const verification = pluginMessages(agent).filter(text => text.includes('Raven verification gate:'))
+    expect(verification.length).toBeGreaterThan(0)
+    expect(verification[0]).toContain('tests: tests exploded')
+  })
+
   it('bounds missing-evidence steering and tells the model to report blockers', async () => {
     const ctx = await harness()
     ctx.llm.registerAdapter(['mock'], new MockAdapter([

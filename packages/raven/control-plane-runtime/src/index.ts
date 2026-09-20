@@ -118,7 +118,7 @@ export function apply(ctx: Context): void {
       kind: evidenceKind(name),
       name,
       status: result.isError ? 'failed' : 'passed',
-      detail: result.isError ? result.error.message : undefined,
+      ...(result.isError ? { detail: result.error.message } : {}),
     })
     return undefined
   })
