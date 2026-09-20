@@ -254,6 +254,9 @@
       "@deepseek-ai/dsh-session-log-export/client": ["./packages/session-query/session-log-export/src/client"],
       "@deepseek-ai/dsh-raven-control-plane": ["./packages/raven/control-plane/src"],
       "@deepseek-ai/dsh-raven-control-plane-runtime": ["./packages/raven/control-plane-runtime/src"],
+      // Raven compatibility subpaths are hand-written because the package-alias generator owns only bare and invariant specifiers.
+      "@deepseek-ai/dsh-system-prompt/raven-fable": ["./packages/core/system-prompt/src/raven-fable.ts"],
+      "@deepseek-ai/dsh-tools/raven-fable-compat": ["./packages/core/tools/src/raven-fable-compat.ts"],
       // BEGIN generated package aliases — pnpm run gen-tsconfig-paths
       "@deepseek-ai/dsh-acp": ["./packages/acp/acp/src"],
       "@deepseek-ai/dsh-acp-app": ["./packages/bundle/acp-app/src"],
@@ -409,7 +412,6 @@
       "@deepseek-ai/dsh-subprocess-local": ["./packages/subprocess/subprocess-local/src"],
       "@deepseek-ai/dsh-system-prompt": ["./packages/core/system-prompt/src"],
       "@deepseek-ai/dsh-system-prompt/invariant": ["./packages/core/system-prompt/src/invariant.ts"],
-      "@deepseek-ai/dsh-system-prompt/raven-fable": ["./packages/core/system-prompt/src/raven-fable.ts"],
       "@deepseek-ai/dsh-terminal": ["./packages/terminal/terminal/src"],
       "@deepseek-ai/dsh-terminal-bash": ["./packages/terminal/terminal-bash/src"],
       "@deepseek-ai/dsh-time-context": ["./packages/context/time-context/src"],
@@ -443,7 +445,6 @@
       "@deepseek-ai/dsh-tool-workflow/invariant": ["./packages/workflow/tool-workflow/src/invariant.ts"],
       "@deepseek-ai/dsh-tools": ["./packages/core/tools/src"],
       "@deepseek-ai/dsh-tools/invariant": ["./packages/core/tools/src/invariant.ts"],
-      "@deepseek-ai/dsh-tools/raven-fable-compat": ["./packages/core/tools/src/raven-fable-compat.ts"],
       "@deepseek-ai/dsh-user-approval": ["./packages/interaction/user-approval/src"],
       "@deepseek-ai/dsh-user-approval/invariant": ["./packages/interaction/user-approval/src/invariant.ts"],
       "@deepseek-ai/dsh-user-questions": ["./packages/interaction/user-questions/src"],
