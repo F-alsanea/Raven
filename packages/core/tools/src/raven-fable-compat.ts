@@ -6,6 +6,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type {
   ToolDefinition,
@@ -108,22 +109,23 @@ function translatedExecution(
   return { ...exec, name: target, arguments: translated }
 }
 
-function translatedRunContext(
-  exec: ToolRunContext,
-  target: string,
-  translated: unknown,
-): ToolRunContext {
-  return { ...exec, name: target, arguments: translated }
+function errorText(result: { content: readonly unknown[]; error?: { message?: string } }): string {
+  const rendered = result.content
+    .flatMap(block => (
+      typeof block === 'object'
+      && block !== null
+      && 'type' in block
+      && block.type === 'text'
+      && 'text' in block
+      && typeof block.text === 'string'
+        ? [block.text]
+        : []
+    ))
+    .join('\n')
+  return rendered.length > 0 ? rendered.replace(/^Error:\s*/, '') : result.error?.message ?? 'compatibility target failed'
 }
 
-function adapterDefinition(ctx: Context, spec: AdapterSpec): ToolDefinition {
-  const target = ctx.tools.get(spec.target)
-  if (target === undefined) {
-    throw new Error(
-      `Fable compatibility tool ${JSON.stringify(spec.alias)} requires registered Raven tool ${JSON.stringify(spec.target)}`,
-    )
-  }
-
+function adapterDefinition(ctx: Context, spec: AdapterSpec, target: ToolDefinition): ToolDefinition {
   const translate = spec.translate
   return {
     name: spec.alias,
@@ -141,7 +143,19 @@ function adapterDefinition(ctx: Context, spec: AdapterSpec): ToolDefinition {
     },
     async execute(args, exec) {
       const translated = translate(args)
-      return target.execute(translated, translatedRunContext(exec, spec.target, translated))
+      const result = await ctx.tools.execute({
+        callId: ToolCallId(`${exec.callId}:raven-fable:${spec.target}`),
+        rootCallId: exec.rootCallId,
+        name: spec.target,
+        arguments: translated,
+        agent: exec.agent,
+        parent: exec.token,
+        signal: exec.signal,
+      })
+      for (const context of result.additionalContexts ?? []) exec.deferContext(context)
+      if (result.isError) throw new Error(errorText(result))
+      if (result.concludesTurn) exec.concludeTurn()
+      return result.value
     },
     ...(target.finalizeContent === undefined
       ? {}
@@ -154,7 +168,6 @@ function adapterDefinition(ctx: Context, spec: AdapterSpec): ToolDefinition {
             )
           },
         }),
-    ...(target.timeoutMs === undefined ? {} : { timeoutMs: target.timeoutMs }),
     ...(target.isConcurrencySafe === undefined
       ? {}
       : { isConcurrencySafe: (args: unknown) => target.isConcurrencySafe!(translate(args)) }),
@@ -171,19 +184,49 @@ function adapterDefinition(ctx: Context, spec: AdapterSpec): ToolDefinition {
 }
 
 /**
- * Register Fable tool names only where Raven has a meaningful equivalent.
+ * Register each Fable alias whenever its Raven target exists.
  *
- * Claude-only plugin catalogs, Google Drive APIs, UI cards, and other services
- * are intentionally not fabricated. Missing required Raven targets fail at
- * activation instead of leaving a partially working compatibility layer.
+ * Tool registration changes are observed for the lifetime of this plugin so
+ * profile-scoped targets may appear or disappear without making the base
+ * composition fail. Alias execution re-enters the real target through
+ * `ctx.tools.execute`, preserving target-specific policy and cancellation.
  *
  * @param ctx - Cordis context carrying Raven's tool registry.
  */
 export function apply(ctx: Context): void {
-  for (const spec of ADAPTERS) {
-    ctx.effect(
-      () => ctx.tools.register(adapterDefinition(ctx, spec)),
-      `raven-fable-tool-compat.${spec.alias}()`,
-    )
-  }
+  ctx.effect(() => {
+    const active = new Map<string, { target: ToolDefinition; dispose: () => void }>()
+    let syncing = false
+
+    const sync = () => {
+      if (syncing) return
+      syncing = true
+      try {
+        for (const spec of ADAPTERS) {
+          const target = ctx.tools.get(spec.target)
+          const mounted = active.get(spec.alias)
+          if (mounted !== undefined && mounted.target !== target) {
+            active.delete(spec.alias)
+            mounted.dispose()
+          }
+          if (target !== undefined && !active.has(spec.alias)) {
+            active.set(spec.alias, {
+              target,
+              dispose: ctx.tools.register(adapterDefinition(ctx, spec, target)),
+            })
+          }
+        }
+      } finally {
+        syncing = false
+      }
+    }
+
+    const stop = ctx.on('tools/change', sync)
+    sync()
+    return () => {
+      stop()
+      for (const { dispose } of active.values()) dispose()
+      active.clear()
+    }
+  }, 'raven-fable-tool-compat.sync()')
 }
