@@ -467,6 +467,13 @@
       config:
         personaPrefix: ''
 
+    # Raven intentionally mounts the third-party Fable 5.1 capture verbatim as
+    # the complete model-facing system prompt. The plugin suppresses all other
+    # prompt sections/runtime snapshots while leaving tool schemas and runtime
+    # policy enforcement intact.
+    - id: raven-fable-system-prompt
+      name: '@deepseek-ai/dsh-system-prompt/raven-fable'
+
     # Agents created at startup. The base stays empty; raw overlays may create
     # agents, while Web creates sessions on client request.
     - id: agent-loop
