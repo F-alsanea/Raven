@@ -71,7 +71,7 @@ describe('headless-agent keyless smoke', () => {
     expect(String(result?.['output'])).toContain('CLI_TOOL_ROUND_TRIP')
     expect(persistedHeader).toMatchObject({ type: 'session' })
     expect(persistedSystemText).toBe(RAVEN_FABLE_PROMPT)
-    expect(persistedToolNames).toEqual(expect.arrayContaining(['read', 'write', 'edit', 'web_fetch', 'web_search']))
+    expect(persistedToolNames).toEqual(expect.arrayContaining(['read', 'write', 'edit', 'web_fetch', 'web_search', 'web_search_fast']))
     expect(persistedToolNames).not.toContain('str_replace_editor')
   }, PRODUCTION_PROFILE_TEST_TIMEOUT_MS)
 })
