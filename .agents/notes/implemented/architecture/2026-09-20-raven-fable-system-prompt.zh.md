@@ -18,7 +18,7 @@ Raven 将源文件 vendoring 到 `packages/core/system-prompt/prompts/claude-fab
 
 base bundle 会在 `@deepseek-ai/dsh-system-prompt` 后挂载该兼容 prompt，因此基于 base 的 Raven profile 默认使用这份原样 capture。
 
-可选入口 `@deepseek-ai/dsh-tools/raven-fable-compat` 只适配存在真实 Raven 对应能力的 Fable 工具名：`web_search_fast -> web_search`、`present_files -> present` 和 `conversation_search -> session_search`。它不会在 base bundle 中全局挂载，因为 `present` 和面向模型的 session-query 工具并不是每个已发布 profile 都具备。Claude 专属插件目录、专有 connector 和 UI 工具不会被伪造。
+base bundle 同时挂载 `@deepseek-ai/dsh-tools/raven-fable-compat`。它观察 Raven 的工具注册表，只在真实目标当前已挂载时公开对应 adapter：`web_search_fast -> web_search`、`present_files -> present` 和 `conversation_search -> session_search`。目标被移除时 alias 也会移除，因此缺少 `present` 或面向模型 session-query 的 profile 仍然有效。adapter 执行会通过 `ctx.tools.execute` 重新进入真实目标，从而保留目标策略和取消语义。Claude 专属插件目录、专有 connector 和 UI 工具不会被伪造。
 
 vendored 文本来自公开仓库中的第三方 capture。Raven 将它作为来源材料原样保存，但不会独立确认其中关于 Anthropic 产品、模型身份、可用性或内部行为的描述。
 
@@ -30,7 +30,7 @@ vendored 文本来自公开仓库中的第三方 capture。Raven 将它作为来
 
 **修改 agent loop。** loop 层的特例可以强制 prompt，但会绕开现有 complete-section 扩展点，并与 Raven 的插件架构冲突。
 
-**全局挂载所有 compatibility alias。** 当某个 profile 缺少目标工具时会导致启动失败，因此 adapter 保持可选，直到 composition 明确提供所需目标。
+**为了兼容而全局强制挂载全部目标工具。** 仅为了满足 Fable 工具名而额外加入 `present` 和面向模型的 session-query 会改变无关 profile 的能力，因此 compatibility plugin 只跟随 composition 本来就挂载的真实目标。
 
 ## Consequences
 
@@ -38,8 +38,8 @@ vendored 文本来自公开仓库中的第三方 capture。Raven 将它作为来
 - Raven 实际发送给模型的 tool schema 仍是运行时权威来源，Prompt 中提到不存在的 Claude 专属工具不会因此获得对应能力。
 - 即使其他 prompt section 和动态 runtime-context 快照被抑制，Raven 的运行时策略仍会在 prompt 文本之外继续强制执行。
 - 更新 capture 必须替换 asset、核对其 Git blob SHA 与选定源 blob 一致，并同步更新固定 SHA 和测试。
-- compatibility adapter 只在 composition 挂载对应 Raven 目标工具时可用。
+- compatibility alias 会随着对应 Raven 目标的出现和移除而同步变化，因此 base composition 不会额外增加无关能力。
 
 ## Testing
 
-`packages/core/system-prompt/tests/raven-fable.spec.ts` 固定 complete-prompt 组装、runtime-context 抑制、工具 schema 保留、源 SHA 和未修改的 Claude 身份标记。`packages/core/tools/tests/raven-fable-compat.spec.ts` 固定 adapter 参数转换，以及缺少所需 Raven 目标工具时明确失败的行为。采用时还会核对源文件与 vendored 文件的 Git blob SHA 完全一致。
+`packages/core/system-prompt/tests/raven-fable.spec.ts` 固定 complete-prompt 组装、runtime-context 抑制、工具 schema 保留、源 SHA 和未修改的 Claude 身份标记。`packages/core/tools/tests/raven-fable-compat.spec.ts` 固定 adapter 参数转换、随目标注册与移除、保留策略的嵌套 dispatch，以及插件卸载。采用时还会核对源文件与 vendored 文件的 Git blob SHA 完全一致。
