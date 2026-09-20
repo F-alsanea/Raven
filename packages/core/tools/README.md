@@ -213,6 +213,20 @@ Arguments, results, and additional context are data-dependent and resent until c
 
 Append-only; newly visible content follows the reusable request prefix and does not invalidate existing KV Cache entries.
 
+### Raven Fable compatibility adapters
+
+#### What the model sees
+
+The opt-in `@deepseek-ai/dsh-tools/raven-fable-compat` plugin adds Fable-shaped `web_search_fast`, `present_files`, and `conversation_search` schemas and translates their arguments to the existing `web_search`, `present`, and `session_search` implementations. Activation fails if a required target tool is absent; the base bundle therefore does not mount these aliases globally. Claude-only tools without a meaningful Raven capability are not fabricated.
+
+#### Token effect
+
+Each enabled alias adds one tool schema to the request. The adapters add no separate prompt section.
+
+#### KV Cache effect
+
+The tool-schema prefix is stable while the alias set and target schemas are unchanged. Mounting, removing, or changing an adapter may invalidate reuse from the first changed schema token.
+
 ## Known Limitations and Deferred Work
 
 <a id="known-limitations-and-deferred-work"></a>
