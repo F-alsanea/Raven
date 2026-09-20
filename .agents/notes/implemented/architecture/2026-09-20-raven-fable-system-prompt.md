@@ -18,7 +18,7 @@ Raven vendors the source file at `packages/core/system-prompt/prompts/claude-fab
 
 The base bundle mounts the compatibility prompt after `@deepseek-ai/dsh-system-prompt`, so base-backed Raven profiles use the verbatim capture by default.
 
-The opt-in `@deepseek-ai/dsh-tools/raven-fable-compat` entrypoint adapts only Fable tool names with meaningful Raven equivalents: `web_search_fast -> web_search`, `present_files -> present`, and `conversation_search -> session_search`. It is not mounted in the base bundle because `present` and model-facing session-query tools are not present in every shipped profile. Claude-only plugin catalogs, proprietary connectors, and UI tools are not fabricated.
+The base bundle also mounts `@deepseek-ai/dsh-tools/raven-fable-compat`. It observes Raven's tool registry and exposes only adapters whose real targets are currently mounted: `web_search_fast -> web_search`, `present_files -> present`, and `conversation_search -> session_search`. Target removal removes its alias, so profiles that lack `present` or model-facing session-query remain valid. Adapter execution re-enters the target through `ctx.tools.execute`, preserving target policy and cancellation. Claude-only plugin catalogs, proprietary connectors, and UI tools are not fabricated.
 
 The vendored text is a third-party capture from a public repository. Raven preserves it as source material but does not independently verify claims inside it about Anthropic products, model identity, availability, or internal behavior.
 
@@ -30,7 +30,7 @@ The vendored text is a third-party capture from a public repository. Raven prese
 
 **Patch the agent loop.** A loop-level special case could force the prompt but would bypass the existing complete-section extension point and conflict with Raven's plugin architecture.
 
-**Mount every compatibility alias globally.** This would make profiles fail when their target tools are absent, so adapters remain opt-in until a composition provides their required targets.
+**Require every compatibility target globally.** Adding `present` and model-facing session-query only to satisfy Fable names would change unrelated profile capability. The compatibility plugin instead follows the targets a composition already mounts.
 
 ## Consequences
 
@@ -38,8 +38,8 @@ The vendored text is a third-party capture from a public repository. Raven prese
 - Raven's actual model-facing tool schemas remain authoritative at runtime, and references to unavailable Claude-only tools do not create those capabilities.
 - Runtime policy remains enforced outside prompt prose even though other prompt sections and dynamic runtime-context snapshots are suppressed.
 - Updating the capture requires replacing the asset, verifying its Git blob SHA against the chosen source blob, and updating the pinned SHA and tests.
-- Compatibility adapters are available only to compositions that mount their corresponding Raven targets.
+- Compatibility aliases appear and disappear with their corresponding Raven targets, so the base composition does not add unrelated capabilities.
 
 ## Testing
 
-`packages/core/system-prompt/tests/raven-fable.spec.ts` pins complete-prompt assembly, runtime-context suppression, tool-schema preservation, the source SHA, and unmodified Claude identity markers. `packages/core/tools/tests/raven-fable-compat.spec.ts` pins adapter argument translation and fail-loud activation when required Raven targets are absent. Adoption also verifies source and vendored Git blob SHA equality.
+`packages/core/system-prompt/tests/raven-fable.spec.ts` pins complete-prompt assembly, runtime-context suppression, tool-schema preservation, the source SHA, and unmodified Claude identity markers. `packages/core/tools/tests/raven-fable-compat.spec.ts` pins adapter argument translation, target-driven registration/removal, policy-preserving nested dispatch, and plugin disposal. Adoption also verifies source and vendored Git blob SHA equality.
