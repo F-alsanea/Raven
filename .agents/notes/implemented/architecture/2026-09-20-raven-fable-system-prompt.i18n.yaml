@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-20-raven-fable-system-prompt.md
-2026-09-20-raven-fable-system-prompt.md: 84d0e16916fecc83e5293eacdff8782c18eb1cd8
-2026-09-20-raven-fable-system-prompt.zh.md: bebe59b14f8b7da803aaa5aa9ecb0b85705275a1
+2026-09-20-raven-fable-system-prompt.md: f9fec045bab9f667395670a6830a53da3c55988a
+2026-09-20-raven-fable-system-prompt.zh.md: 763cbe36288e89a7102511dc71515bbcb3ae503d
