@@ -467,6 +467,12 @@
       config:
         personaPrefix: ''
 
+    # Raven keeps the Fable 5.1 system prompt byte-identical to its pinned
+    # source. The plugin registers one complete section; tool schemas and
+    # runtime policy context remain owned by their normal Harness services.
+    - id: raven-fable-prompt
+      name: '@deepseek-ai/dsh-raven-fable-prompt'
+
     # Agents created at startup. The base stays empty; raw overlays may create
     # agents, while Web creates sessions on client request.
     - id: agent-loop

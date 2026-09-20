@@ -1,0 +1,62 @@
+name: Raven Fable Verification
+
+on:
+  pull_request:
+    branches:
+      - raven/m1-control-plane
+    paths:
+      - 'packages/raven/fable-prompt/**'
+      - 'packages/raven/control-plane-runtime/**'
+      - 'packages/bundle/base/cordis.patch.yml'
+      - 'packages/bundle/base/package.json'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.base.json'
+      - 'tsconfig.host.json'
+      - 'README.md'
+      - '.github/workflows/raven-fable-prompt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Fable tests
+        run: pnpm exec vitest run packages/raven/fable-prompt/tests
+
+      - name: Loader composition
+        run: pnpm exec vitest run --config vitest.e2e.config.ts packages/raven/fable-prompt/tests/loader.e2e.ts
+
+      - name: Typecheck
+        run: pnpm exec tsc -b packages/raven/fable-prompt/tsconfig.json --pretty false
+
+      - name: Verify Cordis config
+        run: pnpm run verify-cordis-config
+
+      - name: Verify package dependencies
+        run: pnpm run verify-package-dependencies
+
+      - name: Build host
+        run: pnpm run build:lib:host
+
+      - name: Built package smoke
+        run: node --input-type=module -e "const m = await import('./packages/raven/fable-prompt/lib/index.js'); if (typeof m.apply !== 'function' || typeof m.transformAntmlStream !== 'function') process.exit(1)"

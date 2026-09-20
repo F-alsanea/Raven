@@ -254,6 +254,7 @@
       "@deepseek-ai/dsh-session-log-export/client": ["./packages/session-query/session-log-export/src/client"],
       "@deepseek-ai/dsh-raven-control-plane": ["./packages/raven/control-plane/src"],
       "@deepseek-ai/dsh-raven-control-plane-runtime": ["./packages/raven/control-plane-runtime/src"],
+      "@deepseek-ai/dsh-raven-fable-prompt": ["./packages/raven/fable-prompt/src"],
       // BEGIN generated package aliases — pnpm run gen-tsconfig-paths
       "@deepseek-ai/dsh-acp": ["./packages/acp/acp/src"],
       "@deepseek-ai/dsh-acp-app": ["./packages/bundle/acp-app/src"],
