@@ -213,6 +213,20 @@ Program-only SDK bindings:
 
 仅追加；新的可见内容位于可复用请求前缀之后，不会使现有 KV Cache 条目失效。
 
+### Raven Fable compatibility adapter
+
+#### 模型看到的内容
+
+可选插件 `@deepseek-ai/dsh-tools/raven-fable-compat` 会增加符合 Fable 参数形状的 `web_search_fast`、`present_files` 和 `conversation_search` schema，并把参数转换后交给现有的 `web_search`、`present` 和 `session_search` 实现。缺少任一所需目标工具时插件会在激活阶段明确失败，因此 base bundle 不会全局挂载这些 alias。没有真实 Raven 能力对应的 Claude 专属工具不会被伪造。
+
+#### Token 影响
+
+每个启用的 alias 会给请求增加一个工具 schema；adapter 不会增加额外 prompt section。
+
+#### KV Cache 影响
+
+只要 alias 集合和目标 schema 不变，工具 schema 前缀就保持稳定。挂载、移除或修改 adapter 可能从第一个变化 schema token 起使 cache 复用失效。
+
 ## 已知限制与延期工作
 
 <a id="known-limitations-and-deferred-work"></a>
