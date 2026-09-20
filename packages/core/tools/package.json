@@ -31,13 +31,18 @@
       "default": "./lib/types/presentation.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./raven-fable-compat": {
+      "types": "./lib/types/raven-fable-compat.d.ts",
+      "default": "./lib/raven-fable-compat.js"
+    }
   },
   "files": [
     "lib/index.js",
     "lib/invariant.js",
     "lib/types/**/*.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/raven-fable-compat.js"
   ],
   "license": "MIT",
   "peerDependencies": {
