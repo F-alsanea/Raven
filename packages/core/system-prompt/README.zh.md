@@ -162,6 +162,20 @@ schema token 在每次请求中重复。限制工具会为该 agent 移除其全
 
 只要可见 schema 集合、渲染与顺序不变，前缀就保持稳定。注册、限制或重排序可能从第一个变化的 schema token 起使复用失效。
 
+### Raven Fable 完整 prompt
+
+#### 模型看到的内容
+
+当 base composition 挂载 `@deepseek-ai/dsh-system-prompt/raven-fable` 时，system prompt 就是 vendored 的 `prompts/claude-fable-5.1.md` asset，作为唯一 complete section 原样发送；其他 prompt section 和 runtime-context 快照会被抑制，而工具 schema 仍按正常流程组装。采用时的源 blob 固定在插件和[决策记录](../../../.agents/notes/implemented/architecture/2026-09-20-raven-fable-system-prompt.zh.md)中。
+
+#### Token 影响
+
+完整 vendored prompt 会进入携带当前 system surface node 的每个模型请求。实际 token 数取决于所选模型的 tokenizer；兼容插件不会对正文做删减或摘要。
+
+#### KV Cache 影响
+
+只要 vendored asset 不变，prompt 前缀就保持逐字节稳定。替换或编辑 asset 会改变 system surface node，并可能从第一个变化 token 起使 provider cache 失效。
+
 ## 已知限制与延期工作
 
 <a id="known-limitations-and-deferred-work"></a>
