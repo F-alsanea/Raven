@@ -217,7 +217,7 @@ Append-only; newly visible content follows the reusable request prefix and does 
 
 #### What the model sees
 
-The opt-in `@deepseek-ai/dsh-tools/raven-fable-compat` plugin adds Fable-shaped `web_search_fast`, `present_files`, and `conversation_search` schemas and translates their arguments to the existing `web_search`, `present`, and `session_search` implementations. Activation fails if a required target tool is absent; the base bundle therefore does not mount these aliases globally. Claude-only tools without a meaningful Raven capability are not fabricated.
+The base composition mounts `@deepseek-ai/dsh-tools/raven-fable-compat`. It adds a Fable-shaped `web_search_fast`, `present_files`, or `conversation_search` schema only while the corresponding `web_search`, `present`, or `session_search` target exists, and removes the alias when that target disappears. Calls are translated and dispatched through the real target so its execution policy and cancellation still apply. Claude-only tools without a meaningful Raven capability are not fabricated.
 
 #### Token effect
 
