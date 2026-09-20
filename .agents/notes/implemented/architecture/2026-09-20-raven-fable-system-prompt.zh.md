@@ -42,4 +42,4 @@ vendored 文本来自公开仓库中的第三方 capture。Raven 将它作为来
 
 ## Testing
 
-`packages/core/system-prompt/tests/raven-fable.spec.ts` 固定 complete-prompt 组装、runtime-context 抑制、工具 schema 保留、源 SHA 和未修改的 Claude 身份标记。`packages/core/tools/tests/raven-fable-compat.spec.ts` 固定 adapter 参数转换、随目标注册与移除、保留策略的嵌套 dispatch，以及插件卸载。采用时还会核对源文件与 vendored 文件的 Git blob SHA 完全一致。
+`packages/core/system-prompt/tests/raven-fable.spec.ts` 固定 complete-prompt 组装、runtime-context 抑制、工具 schema 保留、源 SHA 和插件卸载。`packages/core/tools/tests/raven-fable-compat.spec.ts` 固定 adapter 参数转换、随目标注册与移除、保留策略的嵌套 dispatch，以及插件卸载。已发布 headless 的 keyless smoke 会通过真实 Loader tree 启动，读取持久化的 `system/message`，要求它与 vendored prompt 完全相等，并要求模型可见工具列表包含 `web_search_fast`。采用时还会核对源文件与 vendored 文件的 Git blob SHA 完全一致。
