@@ -162,6 +162,20 @@ Schema tokens repeat on every request. Restricting a tool removes its entire sch
 
 Prefix-stable while the visible schema set, rendering, and order are unchanged. Registration, restriction, or reordering may invalidate reuse from the first changed schema token.
 
+### Raven Fable complete prompt
+
+#### What the model sees
+
+When the base composition mounts `@deepseek-ai/dsh-system-prompt/raven-fable`, the system prompt is exactly the vendored `prompts/claude-fable-5.1.md` asset as one complete section; all other prompt sections and runtime-context snapshots are suppressed, while tool schemas remain assembled normally. The asset's adopted source blob is pinned in the plugin and in the [decision record](../../../.agents/notes/implemented/architecture/2026-09-20-raven-fable-system-prompt.md).
+
+#### Token effect
+
+The full vendored prompt is part of every model request that carries the active system surface node. Its token count depends on the selected model tokenizer; the compatibility plugin does not shorten or summarize it.
+
+#### KV Cache effect
+
+The prompt prefix is byte-stable while the vendored asset is unchanged. Replacing or editing the asset changes the system surface node and may invalidate provider cache reuse from the first changed token.
+
 ## Known Limitations and Deferred Work
 
 <a id="known-limitations-and-deferred-work"></a>
