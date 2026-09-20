@@ -41,7 +41,7 @@ describe('Raven Fable system prompt', () => {
   })
 
   it('keeps the third-party prompt identity byte content unmodified', () => {
-    expect(RAVEN_FABLE_PROMPT).toStartWith('Claude should never use `<antml:voice_note>` blocks')
+    expect(RAVEN_FABLE_PROMPT.startsWith('Claude should never use `<antml:voice_note>` blocks')).toBe(true)
     expect(RAVEN_FABLE_PROMPT).toContain('# claude_behavior')
     expect(RAVEN_FABLE_PROMPT).toContain('Claude Fable 5.1')
     expect(RAVEN_FABLE_PROMPT.endsWith('\n')).toBe(true)
