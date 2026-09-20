@@ -217,7 +217,7 @@ Program-only SDK bindings:
 
 #### 模型看到的内容
 
-可选插件 `@deepseek-ai/dsh-tools/raven-fable-compat` 会增加符合 Fable 参数形状的 `web_search_fast`、`present_files` 和 `conversation_search` schema，并把参数转换后交给现有的 `web_search`、`present` 和 `session_search` 实现。缺少任一所需目标工具时插件会在激活阶段明确失败，因此 base bundle 不会全局挂载这些 alias。没有真实 Raven 能力对应的 Claude 专属工具不会被伪造。
+base composition 会挂载 `@deepseek-ai/dsh-tools/raven-fable-compat`。只有对应的 `web_search`、`present` 或 `session_search` 目标存在时，它才加入符合 Fable 参数形状的 `web_search_fast`、`present_files` 或 `conversation_search` schema；目标消失时 alias 也会移除。调用会在参数转换后通过真实目标执行，因此其执行策略与取消语义仍然生效。没有真实 Raven 能力对应的 Claude 专属工具不会被伪造。
 
 #### Token 影响
 
